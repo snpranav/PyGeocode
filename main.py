@@ -1,37 +1,96 @@
-#!/bin/python3
+#!/usr/bin/env python
+"""This is a reverse geocoding script that reads a csv file and converts a latitude and longitude into an address. Furthermore, the script writes the data back into a csv of choice.
+"""
 
-import csv, requests
+__author__ = "Pranav Shikarpur"
+__credits__ = "Pranav Shikarpur"
+__version__ = "1.0.0"
 
-def user_input():
-    latitude_col = input("Which column is your latitude stored in? (Please use the letter only (A, B, C,....)\t")
-    longitude_col = input("Which column is your longitude stored in? (Please use the letter only (A, B, C,....)\t")
-    
-    # Formula to convert column letter into list index
-    latitude_col = ord(latitude_col.lower()) - 96
-    longitude_col = ord(longitude_col.lower()) - 96
-    
-    return latitude_col, longitude_col
-    
 
-def read_csv(lat_col, lng_col):
-    # Read from CSV
-    with open('test.csv') as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        line_count=0
-        for row in csv_reader:
-            get_geocode_API(row[lat_col], row[lng_col])
-        #print("Lines Processed:\t" + line_count)
+import csv, requests, os
+import pandas as pd
+
+def user_input(state):
+    disclaimer = "(Please use the letter only (A, B, C,....)"
+    if state == "read_csv":
+        latitude_col = input("Which column is your latitude stored in? {}\t".format(disclaimer))
+        longitude_col = input("Which column is your longitude stored in? {}\t".format(disclaimer))
+        
+        # Formula to convert column letter into list index
+        latitude_col = convert_col_letter_to_index(latitude_col)
+        longitude_col = convert_col_letter_to_index(longitude_col)
+        
+        return latitude_col, longitude_col
+    elif state == "filename":
+        csv_filename = input("Please enter your input csv file name with the .csv extension:\t")
+        return csv_filename
+    else:
+        print("Do you want to write your data to the same file or a different one?")
+        output_file  = input("Hit ENTER if you want to overwrite the or enter a new filename:\t")
+        return output_file
+
+def convert_col_letter_to_index(letter):
+    return ord(letter.lower()) - 96 - 1
+
+def read_csv(csv_filename, lat_col, lng_col):
+    list_of_addresses = []
+    df = pd.read_csv(csv_filename)
+    for index, row in df.iterrows():
+        response = get_geocode_API(row[lat_col], row[lng_col])
+        # Appending to list of the address dictionaries
+        list_of_addresses.append(parse_response(response))
+
+    return list_of_addresses
 
 def get_geocode_API(latitude, longitude):
-    response = requests.get("https://maps.googleapis.com/maps/api/geocode/json?latlng=(lat,lng)&key=API_KEY")
-    parse_response(response.json())
+    response = requests.get("https://maps.googleapis.com/maps/api/geocode/json?latlng={},{}&key={}".format(latitude, longitude, os.environ["MAPS_API_KEY"]))
+    return response.json()
 
 def parse_response(response):
-    pass
+    address_components = response["results"][1]["address_components"]
+    street_address=""
+    for components in address_components:
+        if ("premise" in components["types"]) or ("sublocality" in components["types"]):
+            street_address += components["long_name"] + ", "
+        if "locality" in components["types"]:
+            city = components["long_name"]
+        if "administrative_area_level_1" in components["types"]:
+            state = components["long_name"]
+        if "country" in components["types"]:
+            country = components["long_name"]
+        if "postal_code" in components["types"]:
+            postal_code = components["long_name"]
+
+    # Removing last comma from street address string
+    street_address = street_address[:-2]
+
+    # Creating a dictionary of address components
+    address_dict = {"street_address": street_address, "city": city, "state": state, "country": country, "postal_code": postal_code}
+
+    return address_dict
+
+def writeto_csv(csv_filename, list_of_addresses, output_file):
+    df = pd.read_csv(csv_filename)
+
+    for index, row in df.iterrows():
+        df.loc[index, 'Street'] = list_of_addresses[index]["street_address"]
+        df.loc[index, 'City'] = list_of_addresses[index]["city"]
+        df.loc[index, 'State'] = list_of_addresses[index]["state"]
+        df.loc[index, 'Country'] = list_of_addresses[index]["country"]
+        df.loc[index, 'Postal Code'] = list_of_addresses[index]["postal_code"]
+
+    # Writing dataframe to update CSV
+    if output_file == '':
+        output_file=csv_filename
+    
+    df.to_csv(output_file, encoding='utf-8', index=False)
 
 def main():
-    latitude_col, longitude_col = user_input()
-    read_csv(latitude_col, longitude_col)
+    csv_filename = user_input("filename")
+    latitude_col, longitude_col = user_input("read_csv")
+    list_of_addresses = read_csv(csv_filename, latitude_col, longitude_col)
+    output_file = user_input("output_file")
+    writeto_csv(csv_filename, list_of_addresses, output_file)
 
 if __name__ == "__main__":
     main()
