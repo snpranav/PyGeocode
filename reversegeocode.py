@@ -92,13 +92,16 @@ def writeto_csv(csv_filename, list_of_addresses, output_file, latitude_col, long
     df[df.columns[latitude_col]] = df[df.columns[latitude_col]].fillna(0)
     df[df.columns[longitude_col]] = df[df.columns[latitude_col]].fillna(0)
 
+    # To count address dictionary index
+    dict_index=0
     for index, row in df.iterrows():
         if check_if_invalid_values(row[latitude_col], row[longitude_col]) == False:
-            df.loc[index, 'Street'] = list_of_addresses[index]["street_address"]
-            df.loc[index, 'City'] = list_of_addresses[index]["city"]
-            df.loc[index, 'State'] = list_of_addresses[index]["state"]
-            df.loc[index, 'Country'] = list_of_addresses[index]["country"]
-            df.loc[index, 'Postal Code'] = list_of_addresses[index]["postal_code"]
+            df.loc[index, 'Street'] = list_of_addresses[dict_index]["street_address"]
+            df.loc[index, 'City'] = list_of_addresses[dict_index]["city"]
+            df.loc[index, 'State'] = list_of_addresses[dict_index]["state"]
+            df.loc[index, 'Country'] = list_of_addresses[dict_index]["country"]
+            df.loc[index, 'Postal Code'] = list_of_addresses[dict_index]["postal_code"]
+            dict_index += 1
         else:
             pass
 

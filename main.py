@@ -9,8 +9,8 @@ __version__ = "1.1.0"
 import os
 
 def main():
-    print("Geocoding - address -> location coordinates \nReverse Geocoding - location coordinates -> address\n")
-    user_input = input("Do you want to geocode or REVERSE geocode your csv data? (ENTER g or rg)\t")
+    print("\n\nWhat is Geocoding and Reverse Geocoding?\nGeocoding - address -> location coordinates \nReverse Geocoding - location coordinates -> address\n")
+    user_input = input("Do you want to geocode or REVERSE geocode your csv data? (ENTER 'g' or 'rg' respectively)\t")
     if user_input == "g":
         print("\nLet's Geocode\n")
         os.system('python3 ./geocode.py')
