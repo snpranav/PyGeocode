@@ -42,8 +42,6 @@ def read_csv(csv_filename, lat_col, lng_col):
     df[df.columns[lat_col]] = df[df.columns[lat_col]].fillna(0)
     df[df.columns[lng_col]] = df[df.columns[lng_col]].fillna(0)
 
-    print(df)
-
     for index, row in df.iterrows():
         if check_if_invalid_values(row[lat_col], row[lng_col]) == False:
             response = get_geocode_API(row[lat_col], row[lng_col])
