@@ -9,6 +9,8 @@ __version__ = "1.0.0"
 
 import csv, requests, os
 import pandas as pd
+from math import isnan
+
 
 def user_input(state):
     disclaimer = "(Please use the letter only (A, B, C,....)"
@@ -35,10 +37,20 @@ def convert_col_letter_to_index(letter):
 def read_csv(csv_filename, lat_col, lng_col):
     list_of_addresses = []
     df = pd.read_csv(csv_filename)
+
+    #Replace all NaN values with 0
+    df[df.columns[lat_col]] = df[df.columns[lat_col]].fillna(0)
+    df[df.columns[lng_col]] = df[df.columns[lng_col]].fillna(0)
+
+    print(df)
+
     for index, row in df.iterrows():
-        response = get_geocode_API(row[lat_col], row[lng_col])
-        # Appending to list of the address dictionaries
-        list_of_addresses.append(parse_response(response))
+        if check_if_invalid_values(row[lat_col], row[lng_col]) == False:
+            response = get_geocode_API(row[lat_col], row[lng_col])
+            # Appending to list of the address dictionaries
+            list_of_addresses.append(parse_response(response))
+        else:
+            pass
 
     return list_of_addresses
 
@@ -46,9 +58,16 @@ def get_geocode_API(latitude, longitude):
     response = requests.get("https://maps.googleapis.com/maps/api/geocode/json?latlng={},{}&key={}".format(latitude, longitude, os.environ["MAPS_API_KEY"]))
     return response.json()
 
+def check_if_invalid_values(lat, lng):
+    if lat!=0.0 or lng!=0.0:
+        return False
+    else:
+        return True
+
+
 def parse_response(response):
-    address_components = response["results"][1]["address_components"]
-    street_address=""
+    address_components = response["results"][0]["address_components"]
+    street_address, city, state, country, postal_code = "", "", "","",""
     for components in address_components:
         if ("premise" in components["types"]) or ("sublocality" in components["types"]):
             street_address += components["long_name"] + ", "
@@ -69,15 +88,22 @@ def parse_response(response):
 
     return address_dict
 
-def writeto_csv(csv_filename, list_of_addresses, output_file):
+def writeto_csv(csv_filename, list_of_addresses, output_file, latitude_col, longitude_col):
     df = pd.read_csv(csv_filename)
 
+    #Replace all NaN values with 0
+    df[df.columns[latitude_col]] = df[df.columns[latitude_col]].fillna(0)
+    df[df.columns[longitude_col]] = df[df.columns[latitude_col]].fillna(0)
+
     for index, row in df.iterrows():
-        df.loc[index, 'Street'] = list_of_addresses[index]["street_address"]
-        df.loc[index, 'City'] = list_of_addresses[index]["city"]
-        df.loc[index, 'State'] = list_of_addresses[index]["state"]
-        df.loc[index, 'Country'] = list_of_addresses[index]["country"]
-        df.loc[index, 'Postal Code'] = list_of_addresses[index]["postal_code"]
+        if check_if_invalid_values(row[latitude_col], row[longitude_col]) == False:
+            df.loc[index, 'Street'] = list_of_addresses[index]["street_address"]
+            df.loc[index, 'City'] = list_of_addresses[index]["city"]
+            df.loc[index, 'State'] = list_of_addresses[index]["state"]
+            df.loc[index, 'Country'] = list_of_addresses[index]["country"]
+            df.loc[index, 'Postal Code'] = list_of_addresses[index]["postal_code"]
+        else:
+            pass
 
     # Writing dataframe to update CSV
     if output_file == '':
@@ -90,7 +116,7 @@ def main():
     latitude_col, longitude_col = user_input("read_csv")
     list_of_addresses = read_csv(csv_filename, latitude_col, longitude_col)
     output_file = user_input("output_file")
-    writeto_csv(csv_filename, list_of_addresses, output_file)
+    writeto_csv(csv_filename, list_of_addresses, output_file, latitude_col, longitude_col)
 
 if __name__ == "__main__":
     main()
