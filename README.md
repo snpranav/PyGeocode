@@ -1,7 +1,7 @@
-# Reverse Geocode from CSV
-## (Lat long to Address)
+# PyGeocode
+## Geocoding and Reverse Geocoding from CSV data
 
-This project reads latitude and longitude coordinates from a CSV file and reverse geocodes them into an address.
+This project reads data from a CSV file. Then it geocodes or reverse geocodes data from csv based on user choice.
 
 ### Steps to Run the project successfully
 #### Step 1: Create a virtual environment (Just makes it easier to isolate your project environment)
@@ -29,6 +29,7 @@ Run the following commands (Can only be run on UNIX systems) (Again for COOL peo
 ```
 python3 main.py
 ```
+The script is interactive from here onwards! 😀
 
 ---
-#### A test file exists in the same directory and can be used for testing 🧪
+#### A test folder exists in the same directory that contains tests for geocoding and reverse geocoding respectively 🧪
