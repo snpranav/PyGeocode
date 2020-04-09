@@ -43,7 +43,10 @@ def read_csv(csv_filename, address_col):
             query_address_string = convert_address_to_query_string(row[address_col])
             response = get_geocode_API(query_address_string)
             # Appending to list of the address dictionaries
-            list_of_locations.append(parse_response(response))
+            if parse_response(response)!=None:
+                list_of_locations.append(parse_response(response))
+            else:
+                list_of_locations.append({"lat": "", "lng": ""})
         else:
             pass
 
@@ -64,8 +67,11 @@ def get_geocode_API(address):
     return response.json()
 
 def parse_response(response):
-    location_dict = response["results"][0]["geometry"]["location"]
-    return location_dict
+    if response["status"] != "ZERO_RESULTS":
+        location_dict = response["results"][0]["geometry"]["location"]
+        return location_dict
+    else:
+        return None
 
 def writeto_csv(csv_filename, list_of_locations, output_file, address_col):
     df = pd.read_csv(csv_filename)
@@ -73,10 +79,13 @@ def writeto_csv(csv_filename, list_of_locations, output_file, address_col):
     #Replace all NaN values with "blank_field"
     df[df.columns[address_col]] = df[df.columns[address_col]].fillna("blank_field")
 
+    # To count address dictionary index
+    dict_index=0
     for index, row in df.iterrows():
         if check_if_invalid_values(row[address_col]) == False:
-            df.loc[index, 'Latitude'] = list_of_locations[index]["lat"]
-            df.loc[index, 'Longitude'] = list_of_locations[index]["lng"]
+            df.loc[index, 'Latitude'] = list_of_locations[dict_index]["lat"]
+            df.loc[index, 'Longitude'] = list_of_locations[dict_index]["lng"]
+            dict_index += 1
         else:
             pass
 
