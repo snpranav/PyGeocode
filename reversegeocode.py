@@ -42,11 +42,14 @@ def read_csv(csv_filename, lat_col, lng_col):
     df[df.columns[lng_col]] = df[df.columns[lng_col]].fillna(0)
 
     for index, row in df.iterrows():
-        if check_if_invalid_values(row[lat_col], row[lng_col]) == False:
-            response = get_geocode_API(row[lat_col], row[lng_col])
-            # Appending to list of the address dictionaries
-            list_of_addresses.append(parse_response(response))
-        else:
+        try:
+            if check_if_invalid_values(row[lat_col], row[lng_col]) == False:
+                response = get_geocode_API(row[lat_col], row[lng_col])
+                # Appending to list of the address dictionaries
+                list_of_addresses.append(parse_response(response))
+            else:
+                pass
+        except:
             pass
 
     return list_of_addresses
@@ -63,46 +66,54 @@ def check_if_invalid_values(lat, lng):
 
 
 def parse_response(response):
-    address_components = response["results"][0]["address_components"]
-    street_address, city, state, country, postal_code = "", "", "","",""
-    for components in address_components:
-        if ("premise" in components["types"]) or ("sublocality" in components["types"]):
-            street_address += components["long_name"] + ", "
-        if "locality" in components["types"]:
-            city = components["long_name"]
-        if "administrative_area_level_1" in components["types"]:
-            state = components["long_name"]
-        if "country" in components["types"]:
-            country = components["long_name"]
-        if "postal_code" in components["types"]:
-            postal_code = components["long_name"]
+    try:
+        address_components = response["results"][0]["address_components"]
+        street_address, city, state, country, postal_code = "", "", "","",""
+        for components in address_components:
+            if ("premise" in components["types"]) or ("sublocality" in components["types"]):
+                street_address += components["long_name"] + ", "
+            if "locality" in components["types"]:
+                city = components["long_name"]
+            if "administrative_area_level_1" in components["types"]:
+                state = components["long_name"]
+            if "country" in components["types"]:
+                country = components["long_name"]
+            if "postal_code" in components["types"]:
+                postal_code = components["long_name"]
 
-    # Removing last comma from street address string
-    street_address = street_address[:-2]
+        # Removing last comma from street address string
+        street_address = street_address[:-2]
 
-    # Creating a dictionary of address components
-    address_dict = {"street_address": street_address, "city": city, "state": state, "country": country, "postal_code": postal_code}
+        # Creating a dictionary of address components
+        address_dict = {"street_address": street_address, "city": city, "state": state, "country": country, "postal_code": postal_code}
 
-    return address_dict
+        return address_dict
+    except:
+        pass
 
 def writeto_csv(csv_filename, list_of_addresses, output_file, latitude_col, longitude_col):
     df = pd.read_csv(csv_filename)
-
-    #Replace all NaN values with 0
-    df[df.columns[latitude_col]] = df[df.columns[latitude_col]].fillna(0)
-    df[df.columns[longitude_col]] = df[df.columns[latitude_col]].fillna(0)
+    try:
+        #Replace all NaN values with 0
+        df[df.columns[latitude_col]] = df[df.columns[latitude_col]].fillna(0)
+        df[df.columns[longitude_col]] = df[df.columns[latitude_col]].fillna(0)
+    except:
+        pass
 
     # To count address dictionary index
     dict_index=0
     for index, row in df.iterrows():
-        if check_if_invalid_values(row[latitude_col], row[longitude_col]) == False:
-            df.loc[index, 'Street'] = list_of_addresses[dict_index]["street_address"]
-            df.loc[index, 'City'] = list_of_addresses[dict_index]["city"]
-            df.loc[index, 'State'] = list_of_addresses[dict_index]["state"]
-            df.loc[index, 'Country'] = list_of_addresses[dict_index]["country"]
-            df.loc[index, 'Postal Code'] = list_of_addresses[dict_index]["postal_code"]
-            dict_index += 1
-        else:
+        try:
+            if check_if_invalid_values(row[latitude_col], row[longitude_col]) == False:
+                df.loc[index, 'Street'] = list_of_addresses[dict_index]["street_address"]
+                df.loc[index, 'City'] = list_of_addresses[dict_index]["city"]
+                df.loc[index, 'State'] = list_of_addresses[dict_index]["state"]
+                df.loc[index, 'Country'] = list_of_addresses[dict_index]["country"]
+                df.loc[index, 'Postal Code'] = list_of_addresses[dict_index]["postal_code"]
+                dict_index += 1
+            else:
+                pass
+        except:
             pass
 
     # Writing dataframe to update CSV
@@ -114,9 +125,13 @@ def writeto_csv(csv_filename, list_of_addresses, output_file, latitude_col, long
 def main():
     csv_filename = user_input("filename")
     latitude_col, longitude_col = user_input("read_csv")
-    list_of_addresses = read_csv(csv_filename, latitude_col, longitude_col)
-    output_file = user_input("output_file")
-    writeto_csv(csv_filename, list_of_addresses, output_file, latitude_col, longitude_col)
+    try:
+        list_of_addresses = read_csv(csv_filename, latitude_col, longitude_col)
+        output_file = user_input("output_file")
+        writeto_csv(csv_filename, list_of_addresses, output_file, latitude_col, longitude_col)
+    except:
+        output_file = user_input("output_file")
+        writeto_csv(csv_filename, list_of_addresses, output_file, latitude_col, longitude_col)
 
 if __name__ == "__main__":
     main()
