@@ -10,13 +10,16 @@ import os
 
 def main():
     print("\n\nWhat is Geocoding and Reverse Geocoding?\nGeocoding - address -> location coordinates \nReverse Geocoding - location coordinates -> address\n")
-    user_input = input("Do you want to geocode or REVERSE geocode your csv data? (ENTER 'g' or 'rg' respectively)\t")
+    user_input = input("Do you want to geocode or REVERSE geocode or geocode and REVERSE geocode your csv data? (ENTER 'g' or 'rg' or 'gandrg' respectively)\t")
     if user_input == "g":
         print("\nLet's Geocode\n")
         os.system('python3 ./geocode.py')
     elif user_input=="rg":
         print("\nLet's Reverse Geocode\n")
         os.system('python3 ./reversegeocode.py')
+    elif user_input=="gandrg":
+        print("\nLet's Reverse Geocode then Geocode\n")
+        os.system('python3 ./gandrg.py')
     else:
         print("Invalid Input. Please run the script again.")
     
