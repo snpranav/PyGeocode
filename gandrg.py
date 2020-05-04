@@ -13,17 +13,22 @@ import requests
 import os
 import pandas as pd
 
+if 'MAPS_API_KEY' not in os.environ:
+    raise Exception("API Key Exception", "Script will not work. Please export your MAPS_API_KEY!")
 
 def user_input(state):
     disclaimer = "(Please use the letter only (A, B, C,....)"
     if state == "read_csv":
         address_col = input(
             "Which column are your Addresses stored in? {}\t".format(disclaimer))
+        start_index = input("Which row does the data start from (index of row starting from 0):\t")
+        if int(start_index) == 0:
+            raise Exception('Please insert the column name "address" in your csv to successfully run this script.')
 
         # Formula to convert column letter into list index
         address_col = convert_col_letter_to_index(address_col)
 
-        return address_col
+        return address_col, start_index
     elif state == "filename":
         csv_filename = input(
             "Please enter your input csv file name with the .csv extension:\t")
@@ -39,7 +44,7 @@ def convert_col_letter_to_index(letter):
     return ord(letter.lower()) - 96 - 1
 
 
-def read_csv(csv_filename, address_col):
+def read_csv(csv_filename, address_col, start_index):
     list_of_locations = []
     list_of_addresses = []
     df = pd.read_csv(csv_filename)
@@ -49,21 +54,22 @@ def read_csv(csv_filename, address_col):
         "blank_field")
 
     for index, row in df.iterrows():
-        try:
-            if check_if_invalid_values(row[address_col]) == False:
-                query_address_string = convert_address_to_query_string(
-                    row[address_col])
-                response = get_geocode_API(query_address_string)
-                # Appending to list of the address dictionaries
-                if parse_response(response) != None:
-                    list_of_locations.append(parse_response(response))
-                    list_of_addresses.append(parse_address_response(response))
+        if index >= int(start_index)-1:
+            try:
+                if check_if_invalid_values(row[address_col]) == False:
+                    query_address_string = convert_address_to_query_string(
+                        row[address_col])
+                    response = get_geocode_API(query_address_string)
+                    # Appending to list of the address dictionaries
+                    if parse_response(response) != None:
+                        list_of_locations.append(parse_response(response))
+                        list_of_addresses.append(parse_address_response(response))
+                    else:
+                        list_of_locations.append({"lat": "", "lng": ""})
                 else:
-                    list_of_locations.append({"lat": "", "lng": ""})
-            else:
+                    pass
+            except:
                 pass
-        except:
-            pass
 
     return list_of_locations, list_of_addresses
 
@@ -82,7 +88,7 @@ def convert_address_to_query_string(address):
 
 def get_geocode_API(address):
     response = requests.get(
-        "https://maps.googleapis.com/maps/api/geocode/json?address={}&key={}".format(address, os.environ["MAPS_API_KEY"]))
+        "https://maps.googleapis.com/maps/api/geocode/json?components=country:IN&address={}&key={}".format(address, os.environ["MAPS_API_KEY"]))
     return response.json()
 
 def parse_address_response(response):
@@ -121,7 +127,7 @@ def parse_response(response):
     except:
         pass
 
-def writeto_csv(csv_filename, list_of_locations, output_file, address_col, list_of_addresses):
+def writeto_csv(csv_filename, list_of_locations, output_file, address_col, list_of_addresses, start_index):
     df = pd.read_csv(csv_filename)
 
     # Replace all NaN values with "blank_field"
@@ -134,35 +140,37 @@ def writeto_csv(csv_filename, list_of_locations, output_file, address_col, list_
     # To count address dictionary index
     dict_index = 0
     for index, row in df.iterrows():
-        try:
-            if check_if_invalid_values(row[address_col]) == False:
-                df.loc[index, 'Latitude'] = list_of_locations[dict_index]["lat"]
-                df.loc[index, 'Longitude'] = list_of_locations[dict_index]["lng"]                
-                df.loc[index, 'Street'] = list_of_addresses[dict_index]["street_address"]
-                df.loc[index, 'City'] = list_of_addresses[dict_index]["city"]
-                df.loc[index, 'State'] = list_of_addresses[dict_index]["state"]
-                df.loc[index, 'Country'] = list_of_addresses[dict_index]["country"]
-                df.loc[index, 'Postal Code'] = list_of_addresses[dict_index]["postal_code"]
-                dict_index += 1
-            else:
+        if index >= int(start_index)-1:
+            try:
+                if check_if_invalid_values(row[address_col]) == False:
+                    df.loc[index, 'Latitude'] = list_of_locations[dict_index]["lat"]
+                    df.loc[index, 'Longitude'] = list_of_locations[dict_index]["lng"]                
+                    df.loc[index, 'Street'] = list_of_addresses[dict_index]["street_address"]
+                    df.loc[index, 'City'] = list_of_addresses[dict_index]["city"]
+                    df.loc[index, 'State'] = list_of_addresses[dict_index]["state"]
+                    df.loc[index, 'Country'] = list_of_addresses[dict_index]["country"]
+                    df.loc[index, 'Postal Code'] = list_of_addresses[dict_index]["postal_code"]
+                    dict_index += 1
+                else:
+                    pass
+            except:
                 pass
-        except:
-            pass
 
 
     # Write address components to csv
     # To count address dictionary index
     dict_index=0
     for index, row in df.iterrows():
-        try:
-            df.loc[index, 'Street'] = list_of_addresses[dict_index]["street_address"]
-            df.loc[index, 'City'] = list_of_addresses[dict_index]["city"]
-            df.loc[index, 'State'] = list_of_addresses[dict_index]["state"]
-            df.loc[index, 'Country'] = list_of_addresses[dict_index]["country"]
-            df.loc[index, 'Postal Code'] = list_of_addresses[dict_index]["postal_code"]
-            dict_index += 1
-        except:
-            pass
+        if index >= int(start_index)-1:
+            try:
+                df.loc[index, 'Street'] = list_of_addresses[dict_index]["street_address"]
+                df.loc[index, 'City'] = list_of_addresses[dict_index]["city"]
+                df.loc[index, 'State'] = list_of_addresses[dict_index]["state"]
+                df.loc[index, 'Country'] = list_of_addresses[dict_index]["country"]
+                df.loc[index, 'Postal Code'] = list_of_addresses[dict_index]["postal_code"]
+                dict_index += 1
+            except:
+                pass
 
     # Writing dataframe to update CSV
     if output_file == '':
@@ -173,14 +181,14 @@ def writeto_csv(csv_filename, list_of_locations, output_file, address_col, list_
 
 def main():
     csv_filename = user_input("filename")
-    address_col = user_input("read_csv")
+    address_col, start_index = user_input("read_csv")
     try:
-        list_of_locations, list_of_addresses = read_csv(csv_filename, address_col)
+        list_of_locations, list_of_addresses = read_csv(csv_filename, address_col, start_index)
         output_file = user_input("output_file")
-        writeto_csv(csv_filename, list_of_locations, output_file, address_col, list_of_addresses)
+        writeto_csv(csv_filename, list_of_locations, output_file, address_col, list_of_addresses, start_index)
     except:
         output_file = user_input("output_file")
-        writeto_csv(csv_filename, list_of_locations, output_file, address_col, list_of_addresses)
+        writeto_csv(csv_filename, list_of_locations, output_file, address_col, list_of_addresses, start_index)
 
 
 if __name__ == "__main__":
