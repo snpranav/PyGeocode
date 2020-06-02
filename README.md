@@ -35,4 +35,4 @@ The script is interactive from here onwards! 😀
 #### A test folder exists in the same directory that contains tests for geocoding and reverse geocoding respectively 🧪
 
 ---
-This project is currently used by Reap Benefit for their [Neighborhood Dashboard](http://nd.solveninja.org/)
+This project is currently used by Reap Benefit for the [Neighborhood Dashboard](http://nd.solveninja.org/)
